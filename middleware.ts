@@ -33,33 +33,50 @@ export async function middleware(request: NextRequest) {
 
   const { data: { session } } = await supabase.auth.getSession()
 
-  // Si l'utilisateur n'est pas connecté et essaie d'accéder à une route protégée
-  if (!session && (
-    request.nextUrl.pathname.startsWith('/dashboard')
-  )) {
-    return NextResponse.redirect(new URL('/login', request.url))
+  // Routes protégées (nécessitent une authentification)
+  const protectedRoutes = ['/dashboard']
+  const authRoutes = ['/login', '/signup', '/forgot-password', '/reset-password']
+  const currentPath = request.nextUrl.pathname
+
+  // Vérifier si l'utilisateur est sur une route protégée sans être authentifié
+  if (!session && protectedRoutes.some(route => currentPath.startsWith(route))) {
+    const redirectUrl = new URL('/login', request.url)
+    redirectUrl.searchParams.set('redirectTo', currentPath)
+    return NextResponse.redirect(redirectUrl)
   }
 
-  // Si l'utilisateur est connecté, vérifier son rôle
-  if (session) {
-    const user = session.user
-    const userRole = user.user_metadata.role || 'patient' // Par défaut, utiliser patient
+  // Rediriger les utilisateurs déjà connectés qui tentent d'accéder aux pages d'auth
+  if (session && authRoutes.some(route => currentPath === route)) {
+    // Obtenir les métadonnées de l'utilisateur pour déterminer son rôle
+    const { data: user } = await supabase.auth.getUser()
+    const userRole = user?.user?.user_metadata?.role || 'patient'
     
-    // Redirection selon le rôle si l'utilisateur essaie d'accéder à un dashboard qui n'est pas le sien
-    if (request.nextUrl.pathname.startsWith('/dashboard/')) {
-      const urlPath = request.nextUrl.pathname
-      
-      if (urlPath.startsWith('/dashboard/patient') && userRole !== 'patient') {
-        return NextResponse.redirect(new URL(`/dashboard/${userRole}`, request.url))
-      }
-      
-      if (urlPath.startsWith('/dashboard/medecin') && userRole !== 'medecin') {
-        return NextResponse.redirect(new URL(`/dashboard/${userRole}`, request.url))
-      }
-      
-      if (urlPath.startsWith('/dashboard/administrateur') && userRole !== 'administrateur') {
-        return NextResponse.redirect(new URL(`/dashboard/${userRole}`, request.url))
-      }
+    return NextResponse.redirect(new URL(`/dashboard/${userRole}`, request.url))
+  }
+
+  // Si l'utilisateur est connecté et essaie d'accéder à un dashboard spécifique à un rôle
+  if (session && currentPath.startsWith('/dashboard/')) {
+    // Obtenir les métadonnées de l'utilisateur pour déterminer son rôle
+    const { data: user } = await supabase.auth.getUser()
+    const userRole = user?.user?.user_metadata?.role || 'patient'
+    
+    // Vérifier si l'utilisateur a le bon rôle pour accéder à cette page
+    if (
+      (currentPath.startsWith('/dashboard/patient') && userRole !== 'patient') ||
+      (currentPath.startsWith('/dashboard/medecin') && userRole !== 'medecin') ||
+      (currentPath.startsWith('/dashboard/admin') && userRole !== 'admin')
+    ) {
+      return NextResponse.redirect(new URL(`/dashboard/${userRole}`, request.url))
+    }
+  }
+
+  // Vérifier si l'email a été vérifié pour les routes protégées
+  if (session && protectedRoutes.some(route => currentPath.startsWith(route))) {
+    const { data: user } = await supabase.auth.getUser()
+    const isEmailVerified = user?.user?.email_confirmed_at
+    
+    if (!isEmailVerified) {
+      return NextResponse.redirect(new URL('/verify-email', request.url))
     }
   }
 
@@ -68,6 +85,6 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|api/auth).*)',
+    '/((?!_next/static|_next/image|favicon.ico|public/).*)',
   ],
 } 

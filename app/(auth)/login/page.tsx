@@ -1,68 +1,90 @@
 'use client'
 
-import { useRouter } from 'next/navigation'
-import { useAuth } from '@/lib/hooks/useAuth'
 import { useState } from 'react'
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { toast } from "sonner"
+import { useRouter, useSearchParams } from 'next/navigation'
+import Link from 'next/link'
+import { useAuth } from '@/lib/hooks/useAuth'
+import { Input } from '@/components/ui/input'
+import { Button } from '@/components/ui/button'
+import { Label } from '@/components/ui/label'
+import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card'
 
 export default function LoginPage() {
   const router = useRouter()
-  const { signIn, loading } = useAuth()
+  const searchParams = useSearchParams()
+  const redirectTo = searchParams.get('redirectTo')
+  
+  const { signIn, isLoading, userRole } = useAuth()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
 
-  const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
+    
     try {
       await signIn(email, password)
-      router.push('/dashboard') // Redirection après connexion réussie
-      toast.success("Connexion réussie", { description: "Bienvenue !" })
+      // Rediriger vers la page spécifique au rôle ou utiliser redirectTo s'il est défini
+      if (redirectTo) {
+        router.push(redirectTo)
+      } else {
+        const role = userRole || 'patient'
+        router.push(`/dashboard/${role}`)
+      }
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Une erreur inconnue est survenue.'
-      toast.error("Erreur de connexion", { description: errorMessage })
+      console.error('Erreur lors de la connexion :', error)
     }
   }
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-100">
-      <Card className="w-full max-w-sm">
-        <CardHeader>
-          <CardTitle>Connexion</CardTitle>
-          <CardDescription>Connectez-vous à votre compte</CardDescription>
+    <div className="flex items-center justify-center min-h-screen bg-gray-50 p-4">
+      <Card className="w-full max-w-md">
+        <CardHeader className="space-y-1">
+          <CardTitle className="text-2xl font-bold">Connexion</CardTitle>
+          <CardDescription>
+            Entrez vos identifiants pour accéder à votre compte
+          </CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleLogin} className="space-y-4">
-            <div>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <Input
                 id="email"
                 type="email"
+                placeholder="you@example.com"
+                required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                required
               />
             </div>
-            <div>
+            <div className="space-y-2">
               <Label htmlFor="password">Mot de passe</Label>
               <Input
                 id="password"
                 type="password"
+                placeholder="••••••••"
+                required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                required
               />
+              <div className="text-right">
+                <Link href="/forgot-password" className="text-sm text-blue-600 hover:underline">
+                  Mot de passe oublié?
+                </Link>
+              </div>
             </div>
-            <Button type="submit" disabled={loading} className="w-full">
-              {loading ? 'Chargement...' : 'Se connecter'}
+            <Button type="submit" className="w-full" disabled={isLoading}>
+              {isLoading ? 'Connexion en cours...' : 'Se connecter'}
             </Button>
           </form>
         </CardContent>
-        <CardFooter className="text-center">
-          <p className="text-sm">Pas encore de compte ? <a href="/signup" className="text-blue-600 hover:underline">Inscrivez-vous</a></p>
+        <CardFooter className="flex flex-col space-y-2">
+          <div className="text-sm text-center">
+            Vous n&apos;avez pas de compte?{' '}
+            <Link href="/signup" className="text-blue-600 hover:underline">
+              S&apos;inscrire
+            </Link>
+          </div>
         </CardFooter>
       </Card>
     </div>
