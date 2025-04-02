@@ -73,7 +73,6 @@ export default function MedecinDashboard() {
                         selectedPatientId
                     );
                     const notesData = await getPatientMedicalNotes(
-                        user.id,
                         selectedPatientId
                     );
                     console.log("Notes data:", notesData);
@@ -170,7 +169,9 @@ export default function MedecinDashboard() {
 
             <Tabs defaultValue="appointments" className="space-y-4">
                 <TabsList>
-                    <TabsTrigger value="appointments">Rendez-vous</TabsTrigger>
+                    <TabsTrigger value="appointments">
+                        Mes rendez-vous
+                    </TabsTrigger>
                     <TabsTrigger value="patients">Mes patients</TabsTrigger>
                 </TabsList>
 

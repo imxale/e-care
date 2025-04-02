@@ -8,60 +8,52 @@ import { AppointmentList } from "@/components/appointments/AppointmentList";
 import { CalendarView } from "@/components/appointments/CalendarView";
 import { MedicalRecord } from "@/components/medical-records/MedicalRecord";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-
-interface Appointment {
-    id: string;
-    date: Date;
-    time: string;
-    doctorName: string;
-    patientName: string;
-    status: "scheduled" | "completed" | "cancelled";
-}
-
-interface MedicalNote {
-    id: string;
-    date: Date;
-    title: string;
-    content: string;
-    doctorName: string;
-}
-
-// Mock data - replace with actual data from your backend
-const mockAppointments: Appointment[] = [
-    {
-        id: "1",
-        date: new Date("2024-04-15"),
-        time: "09:00",
-        doctorName: "Dr. Example",
-        patientName: "John Doe",
-        status: "scheduled",
-    },
-    // Add more mock appointments as needed
-];
-
-const mockMedicalNotes: MedicalNote[] = [
-    {
-        id: "1",
-        date: new Date("2024-04-10"),
-        title: "Consultation initiale",
-        content: "Patient présentant des symptômes de grippe...",
-        doctorName: "Dr. Example",
-    },
-    // Add more mock notes as needed
-];
+import {
+    getPatientAppointments,
+    getPatientMedicalNotes,
+    updateAppointmentStatus,
+    createAppointment,
+    type Appointment,
+    type MedicalNote,
+} from "@/services";
 
 export default function PatientDashboard() {
     const router = useRouter();
     const { user, userRole, isLoading, signOut } = useAuth();
-    const [appointments, setAppointments] =
-        useState<Appointment[]>(mockAppointments);
-    const [notes] = useState<MedicalNote[]>(mockMedicalNotes);
+    const [appointments, setAppointments] = useState<Appointment[]>([]);
+    const [notes, setNotes] = useState<MedicalNote[]>([]);
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         if (!isLoading && (!user || userRole !== "patient")) {
             router.push("/login");
         }
     }, [user, userRole, isLoading, router]);
+
+    useEffect(() => {
+        const fetchData = async () => {
+            if (user?.id) {
+                try {
+                    setLoading(true);
+                    const [appointmentsData, notesData] = await Promise.all([
+                        getPatientAppointments(user.id),
+                        getPatientMedicalNotes(user.id),
+                    ]);
+                    setAppointments(appointmentsData);
+                    setNotes(notesData);
+                } catch (error) {
+                    console.error(
+                        "Erreur lors du chargement des données:",
+                        error
+                    );
+                } finally {
+                    setLoading(false);
+                }
+            }
+        };
+
+        fetchData();
+    }, [user?.id]);
 
     const handleLogout = async () => {
         try {
@@ -73,12 +65,16 @@ export default function PatientDashboard() {
     };
 
     const handleCancelAppointment = async (id: string) => {
-        // Implement appointment cancellation logic
-        setAppointments(
-            appointments.map((apt) =>
-                apt.id === id ? { ...apt, status: "cancelled" as const } : apt
-            )
-        );
+        try {
+            await updateAppointmentStatus(id, "status789"); // ID du statut "Annulé"
+            setAppointments(
+                appointments.map((apt) =>
+                    apt.id === id ? { ...apt, statusId: "status789" } : apt
+                )
+            );
+        } catch (error) {
+            console.error("Erreur lors de l'annulation du rendez-vous:", error);
+        }
     };
 
     const handleModifyAppointment = (id: string) => {
@@ -87,19 +83,33 @@ export default function PatientDashboard() {
     };
 
     const handleScheduleAppointment = async (date: Date, timeSlot: string) => {
-        // Implement appointment scheduling logic
-        const newAppointment: Appointment = {
-            id: Date.now().toString(),
-            date,
-            time: timeSlot,
-            doctorName: "Dr. Example", // This should come from the selected doctor
-            patientName: user?.email || "Patient", // This should come from the authenticated user
-            status: "scheduled",
-        };
-        setAppointments([...appointments, newAppointment]);
+        try {
+            if (!user?.id) return;
+
+            // Créer les dates de début et de fin
+            const [hours, minutes] = timeSlot.split(":").map(Number);
+            const start = new Date(date);
+            start.setHours(hours, minutes, 0, 0);
+            const end = new Date(start);
+            end.setMinutes(end.getMinutes() + 30); // Durée standard de 30 minutes
+
+            // Créer le rendez-vous
+            const newAppointment = await createAppointment(
+                "doctor123", // TODO: Permettre la sélection du médecin
+                user.id,
+                start,
+                end,
+                "Consultation standard" // TODO: Permettre la saisie du motif
+            );
+
+            // Mettre à jour la liste des rendez-vous
+            setAppointments([newAppointment, ...appointments]);
+        } catch (error) {
+            console.error("Erreur lors de la prise de rendez-vous:", error);
+        }
     };
 
-    if (isLoading) {
+    if (isLoading || loading) {
         return (
             <div className="flex items-center justify-center min-h-screen">
                 <p>Chargement...</p>
@@ -157,7 +167,7 @@ export default function PatientDashboard() {
 
                 <TabsContent value="records">
                     <MedicalRecord
-                        patientId="1"
+                        patientId={user?.id || ""}
                         patientName={user?.email || "Patient"}
                         notes={notes}
                         onAddNote={async () => {}} // Patients can't add notes

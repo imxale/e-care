@@ -33,7 +33,7 @@ export function PatientList({ patients, onSelectPatient }: PatientListProps) {
         <Card>
             <CardHeader>
                 <CardTitle>Liste des patients</CardTitle>
-                <div className="relative">
+                <div className="relative mt-2">
                     <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
                     <Input
                         placeholder="Rechercher un patient..."
