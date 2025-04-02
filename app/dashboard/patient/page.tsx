@@ -29,11 +29,11 @@ import { CalendarIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
     getPatientAppointments,
-    getPatientMedicalNotes,
+    getPatientNotes,
     updateAppointmentStatus,
     createAppointment,
-    getAppointmentTypes,
     getLocationTypes,
+    getAppointmentTypes,
     getDoctors,
     type Appointment,
     type MedicalNote,
@@ -104,10 +104,7 @@ export default function PatientDashboard() {
                         doctorsData,
                     ] = await Promise.all([
                         getPatientAppointments(user.id),
-                        getPatientMedicalNotes(
-                            "0b8e4224-3748-4a98-84f5-ae5d994ca7d5",
-                            user.id
-                        ),
+                        getPatientNotes(user.id),
                         getLocationTypes(),
                         getAppointmentTypes(),
                         getDoctors(),

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { updateAppointmentStatus } from "@/app/api/services";
+import { updateAppointmentStatus } from "@/services";
 
 export async function PATCH(
     request: Request,
@@ -7,9 +7,19 @@ export async function PATCH(
 ) {
     try {
         const { statusId } = await request.json();
+        const userType = request.headers.get("x-user-type") as
+            | "patient"
+            | "medecin";
+        if (!userType) {
+            return NextResponse.json(
+                { error: "Type d'utilisateur manquant" },
+                { status: 400 }
+            );
+        }
         const appointment = await updateAppointmentStatus(
             params.appointmentId,
-            statusId
+            statusId,
+            userType
         );
         return NextResponse.json(appointment);
     } catch (error) {

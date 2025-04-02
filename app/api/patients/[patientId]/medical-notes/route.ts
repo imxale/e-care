@@ -1,20 +1,16 @@
 import { NextResponse } from "next/server";
-import { getPatientMedicalNotes } from "@/app/api/services";
+import { getPatientNotes } from "@/services";
 
 export async function GET(
     request: Request,
     context: { params: { patientId: string } }
 ) {
     const patientId = context.params.patientId;
-
     try {
-        const notes = await getPatientMedicalNotes(patientId);
-        return NextResponse.json(notes);
+        const notes = await getPatientNotes(patientId);
+        return NextResponse.json(notes, { status: 200 });
     } catch (error) {
-        console.error(
-            "Erreur lors de la récupération des notes médicales:",
-            error
-        );
+        console.error("Error retrieving medical notes:", error);
         return NextResponse.json(
             { error: "Erreur lors de la récupération des notes médicales" },
             { status: 500 }

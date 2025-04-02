@@ -4,7 +4,7 @@ import { v4 as uuidv4 } from "uuid";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
 
-export const getPatientMedicalNotes = async (
+export const getDoctorPatientNotes = async (
     doctorId: string,
     patientId: string
 ): Promise<MedicalNote[]> => {
@@ -19,24 +19,17 @@ export const getPatientMedicalNotes = async (
     return data as MedicalNote[];
 };
 
-export const getDoctorPatientNotes = async (
-    doctorId: string,
+export const getPatientNotes = async (
     patientId: string
-) => {
-    try {
-        const response = await fetch(
-            `${API_URL}/api/doctors/${doctorId}/patients/${patientId}/medical-notes`
-        );
-        if (!response.ok) {
-            throw new Error(
-                "Erreur lors de la récupération des notes médicales"
-            );
-        }
-        return await response.json();
-    } catch (error) {
-        console.error("Erreur:", error);
-        throw error;
-    }
+): Promise<MedicalNote[]> => {
+    const { data, error } = await supabase
+        .from("medicalNote")
+        .select("*")
+        .eq("patientId", patientId)
+        .order("createdAt", { ascending: false });
+
+    if (error) throw error;
+    return data as MedicalNote[];
 };
 
 export const addMedicalNote = async (

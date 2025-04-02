@@ -11,7 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
     getDoctorAppointments,
     getDoctorPatients,
-    getPatientMedicalNotes,
+    getDoctorPatientNotes,
     addMedicalNote,
     updateAppointmentStatus,
     type Appointment,
@@ -65,7 +65,7 @@ export default function MedecinDashboard() {
         const fetchNotes = async () => {
             if (selectedPatientId && user?.id) {
                 try {
-                    const notesData = await getPatientMedicalNotes(
+                    const notesData = await getDoctorPatientNotes(
                         user.id,
                         selectedPatientId
                     );
