@@ -154,11 +154,6 @@ export default function PatientDashboard() {
         }
     };
 
-    const handleModifyAppointment = (id: string) => {
-        // Implement appointment modification logic
-        console.log("Modify appointment:", id);
-    };
-
     const handleScheduleAppointment = async () => {
         try {
             if (!user?.id || !selectedDate || !selectedTimeSlot) return;
@@ -239,7 +234,6 @@ export default function PatientDashboard() {
                     <AppointmentList
                         appointments={appointments}
                         onCancel={handleCancelAppointment}
-                        onModify={handleModifyAppointment}
                         userRole="patient"
                     />
                 </TabsContent>

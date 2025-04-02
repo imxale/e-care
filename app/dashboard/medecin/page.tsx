@@ -41,13 +41,10 @@ export default function MedecinDashboard() {
             if (user?.id) {
                 try {
                     setLoading(true);
-                    console.log("Fetching data for doctor:", user.id);
                     const [appointmentsData, patientsData] = await Promise.all([
                         getDoctorAppointments(user.id),
                         getDoctorPatients(user.id),
                     ]);
-                    console.log("Appointments data:", appointmentsData);
-                    console.log("Patients data:", patientsData);
                     setAppointments(appointmentsData);
                     setPatients(patientsData);
                 } catch (error) {
@@ -68,15 +65,10 @@ export default function MedecinDashboard() {
         const fetchNotes = async () => {
             if (selectedPatientId && user?.id) {
                 try {
-                    console.log(
-                        "Fetching notes for patient:",
-                        selectedPatientId
-                    );
                     const notesData = await getPatientMedicalNotes(
                         user.id,
                         selectedPatientId
                     );
-                    console.log("Notes data:", notesData);
                     setNotes(notesData);
                 } catch (error) {
                     console.error(
@@ -113,23 +105,16 @@ export default function MedecinDashboard() {
         }
     };
 
-    const handleModifyAppointment = (id: string) => {
-        // Implement appointment modification logic
-        console.log("Modify appointment:", id);
-    };
-
     const handleAddNote = async (
         note: Omit<MedicalNote, "id" | "createdAt" | "updatedAt">
     ) => {
         try {
             if (user?.id && selectedPatientId) {
-                console.log("Adding note:", note);
                 const newNote = await addMedicalNote({
                     ...note,
                     doctorId: user.id,
                     patientId: selectedPatientId,
                 });
-                console.log("New note added:", newNote);
                 setNotes([newNote, ...notes]);
             }
         } catch (error) {
@@ -138,7 +123,6 @@ export default function MedecinDashboard() {
     };
 
     const handleSelectPatient = (patientId: string) => {
-        console.log("Selecting patient:", patientId);
         setSelectedPatientId(patientId);
     };
 
@@ -181,7 +165,6 @@ export default function MedecinDashboard() {
                     <AppointmentList
                         appointments={appointments}
                         onCancel={handleCancelAppointment}
-                        onModify={handleModifyAppointment}
                         userRole="medecin"
                     />
                 </TabsContent>

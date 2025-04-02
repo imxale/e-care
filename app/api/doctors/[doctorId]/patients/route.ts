@@ -5,7 +5,6 @@ export async function GET(
     request: Request,
     context: { params: { doctorId: string } }
 ) {
-    console.log(context.params);
     const doctorId = await context.params.doctorId;
 
     try {

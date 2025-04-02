@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createAppointment } from "@/app/api/services";
+import { createAppointment } from "@/services";
 
 export async function POST(request: Request) {
     try {
@@ -11,6 +11,8 @@ export async function POST(request: Request) {
             patientId,
             new Date(start),
             new Date(end),
+            "false",
+            "false",
             reason
         );
 

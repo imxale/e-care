@@ -15,7 +15,6 @@ import { type Appointment } from "@/services";
 interface AppointmentListProps {
     appointments: Appointment[];
     onCancel: (id: string) => Promise<void>;
-    onModify: (id: string) => void;
     userRole: "patient" | "medecin";
 }
 

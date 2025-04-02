@@ -13,6 +13,5 @@ export const getDoctorPatients = async (doctorId: string): Promise<User[]> => {
         throw new Error("Erreur lors de la récupération des patients");
     }
 
-    console.log("Patients trouvés:", data);
     return data as User[];
 };
