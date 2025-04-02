@@ -11,22 +11,16 @@ export type User = {
 export type AppointmentType = {
     id: string;
     name: string;
-    createdAt: string;
-    updatedAt: string;
 };
 
 export type AppointmentStatus = {
     id: string;
     name: string;
-    createdAt: string;
-    updatedAt: string;
 };
 
 export type LocationType = {
     id: string;
     name: string;
-    createdAt: string;
-    updatedAt: string;
 };
 
 export type Appointment = {
@@ -34,20 +28,20 @@ export type Appointment = {
     doctorId: string;
     patientId: string;
     reason: string;
-    start: string;
-    end: string;
-    takedAt: string;
-    diagnosis: string | null;
+    start: Date;
+    end: Date;
+    takedAt: Date;
+    diagnosis?: string;
     statusId: string;
     typeId: string;
     locationTypeId: string;
-    createdAt: string;
-    updatedAt: string;
-    // Relations
-    appointmentType?: AppointmentType;
-    appointmentStatus?: AppointmentStatus;
+    createdAt: Date;
+    updatedAt: Date;
+    type?: AppointmentType;
+    status?: AppointmentStatus;
     locationType?: LocationType;
-    patient?: User;
+    doctor?: any;
+    patient?: any;
 };
 
 export type MedicalNote = {

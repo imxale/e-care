@@ -8,13 +8,28 @@ import { AppointmentList } from "@/components/appointments/AppointmentList";
 import { CalendarView } from "@/components/appointments/CalendarView";
 import { MedicalRecord } from "@/components/medical-records/MedicalRecord";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
 import {
     getPatientAppointments,
     getPatientMedicalNotes,
     updateAppointmentStatus,
     createAppointment,
+    getAppointmentTypes,
+    getLocationTypes,
+    getDoctors,
     type Appointment,
     type MedicalNote,
+    type AppointmentType,
+    type LocationType,
+    type User,
 } from "@/services";
 
 export default function PatientDashboard() {
@@ -22,7 +37,22 @@ export default function PatientDashboard() {
     const { user, userRole, isLoading, signOut } = useAuth();
     const [appointments, setAppointments] = useState<Appointment[]>([]);
     const [notes, setNotes] = useState<MedicalNote[]>([]);
+    const [doctors, setDoctors] = useState<User[]>([]);
     const [loading, setLoading] = useState(true);
+    const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+    const [selectedTimeSlot, setSelectedTimeSlot] = useState<string | null>(
+        null
+    );
+    const [selectedDoctor, setSelectedDoctor] = useState<string>("");
+    const [reason, setReason] = useState<string>("");
+    const [locationTypes, setLocationTypes] = useState<LocationType[]>([]);
+    const [appointmentTypes, setAppointmentTypes] = useState<AppointmentType[]>(
+        []
+    );
+    const [selectedLocationType, setSelectedLocationType] =
+        useState<string>("");
+    const [selectedAppointmentType, setSelectedAppointmentType] =
+        useState<string>("");
 
     useEffect(() => {
         if (!isLoading && (!user || userRole !== "patient")) {
@@ -35,12 +65,27 @@ export default function PatientDashboard() {
             if (user?.id) {
                 try {
                     setLoading(true);
-                    const [appointmentsData, notesData] = await Promise.all([
+                    const [
+                        appointmentsData,
+                        notesData,
+                        locationTypesData,
+                        appointmentTypesData,
+                        doctorsData,
+                    ] = await Promise.all([
                         getPatientAppointments(user.id),
-                        getPatientMedicalNotes(user.id),
+                        getPatientMedicalNotes(
+                            "0b8e4224-3748-4a98-84f5-ae5d994ca7d5",
+                            user.id
+                        ),
+                        getLocationTypes(),
+                        getAppointmentTypes(),
+                        getDoctors(),
                     ]);
                     setAppointments(appointmentsData);
                     setNotes(notesData);
+                    setLocationTypes(locationTypesData);
+                    setAppointmentTypes(appointmentTypesData);
+                    setDoctors(doctorsData);
                 } catch (error) {
                     console.error(
                         "Erreur lors du chargement des données:",
@@ -82,28 +127,38 @@ export default function PatientDashboard() {
         console.log("Modify appointment:", id);
     };
 
-    const handleScheduleAppointment = async (date: Date, timeSlot: string) => {
+    const handleScheduleAppointment = async () => {
         try {
-            if (!user?.id) return;
+            if (!user?.id || !selectedDate || !selectedTimeSlot) return;
 
             // Créer les dates de début et de fin
-            const [hours, minutes] = timeSlot.split(":").map(Number);
-            const start = new Date(date);
+            const [hours, minutes] = selectedTimeSlot.split(":").map(Number);
+            const start = new Date(selectedDate);
             start.setHours(hours, minutes, 0, 0);
             const end = new Date(start);
             end.setMinutes(end.getMinutes() + 30); // Durée standard de 30 minutes
 
             // Créer le rendez-vous
             const newAppointment = await createAppointment(
-                "doctor123", // TODO: Permettre la sélection du médecin
+                selectedDoctor,
                 user.id,
                 start,
                 end,
-                "Consultation standard" // TODO: Permettre la saisie du motif
+                reason,
+                selectedLocationType,
+                selectedAppointmentType
             );
 
             // Mettre à jour la liste des rendez-vous
             setAppointments([newAppointment, ...appointments]);
+
+            // Réinitialiser le formulaire
+            setSelectedDate(null);
+            setSelectedTimeSlot(null);
+            setSelectedDoctor("");
+            setReason("");
+            setSelectedLocationType("");
+            setSelectedAppointmentType("");
         } catch (error) {
             console.error("Erreur lors de la prise de rendez-vous:", error);
         }
@@ -157,12 +212,116 @@ export default function PatientDashboard() {
                     />
                 </TabsContent>
 
-                <TabsContent value="schedule">
-                    <CalendarView
-                        userRole="patient"
-                        appointments={appointments}
-                        onSchedule={handleScheduleAppointment}
-                    />
+                <TabsContent value="schedule" className="space-y-4">
+                    <div className="max-w-2xl mx-auto space-y-6">
+                        <div className="space-y-2">
+                            <Label htmlFor="doctor">Médecin</Label>
+                            <Select
+                                value={selectedDoctor}
+                                onValueChange={setSelectedDoctor}
+                            >
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Sélectionner un médecin" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {doctors.map((doctor) => (
+                                        <SelectItem
+                                            key={doctor.id}
+                                            value={doctor.id}
+                                        >
+                                            Dr. {doctor.firstName}{" "}
+                                            {doctor.lastName}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label htmlFor="location">
+                                Type de rendez-vous
+                            </Label>
+                            <Select
+                                value={selectedLocationType}
+                                onValueChange={setSelectedLocationType}
+                            >
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Sélectionner le type" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {locationTypes.map((type) => (
+                                        <SelectItem
+                                            key={type.id}
+                                            value={type.id}
+                                        >
+                                            {type.name}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label htmlFor="type">Type de consultation</Label>
+                            <Select
+                                value={selectedAppointmentType}
+                                onValueChange={setSelectedAppointmentType}
+                            >
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Sélectionner le type" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {appointmentTypes.map((type) => (
+                                        <SelectItem
+                                            key={type.id}
+                                            value={type.id}
+                                        >
+                                            {type.name}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label htmlFor="reason">
+                                Motif de consultation
+                            </Label>
+                            <Input
+                                id="reason"
+                                value={reason}
+                                onChange={(e) => setReason(e.target.value)}
+                                placeholder="Décrivez le motif de votre consultation"
+                            />
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label>Date et heure du rendez-vous</Label>
+                            <CalendarView
+                                userRole="patient"
+                                appointments={appointments}
+                                onSchedule={async (date, timeSlot) => {
+                                    setSelectedDate(date);
+                                    setSelectedTimeSlot(timeSlot);
+                                }}
+                            />
+                        </div>
+
+                        <Button
+                            onClick={handleScheduleAppointment}
+                            disabled={
+                                !selectedDate ||
+                                !selectedTimeSlot ||
+                                !selectedDoctor ||
+                                !reason ||
+                                !selectedLocationType ||
+                                !selectedAppointmentType
+                            }
+                            className="w-full"
+                        >
+                            Confirmer le rendez-vous
+                        </Button>
+                    </div>
                 </TabsContent>
 
                 <TabsContent value="records">

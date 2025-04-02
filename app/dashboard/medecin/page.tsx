@@ -73,6 +73,7 @@ export default function MedecinDashboard() {
                         selectedPatientId
                     );
                     const notesData = await getPatientMedicalNotes(
+                        user.id,
                         selectedPatientId
                     );
                     console.log("Notes data:", notesData);

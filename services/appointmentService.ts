@@ -1,89 +1,136 @@
-import type { Appointment } from "./types";
+import { supabase } from "../lib/supabase";
+import type {
+    Appointment,
+    AppointmentType,
+    AppointmentStatus,
+    LocationType,
+    User,
+} from "./types";
+import { v4 as uuidv4 } from "uuid";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
+
+export const getAppointmentTypes = async () => {
+    const { data, error } = await supabase
+        .from("appointmentType")
+        .select("*")
+        .order("name");
+
+    if (error) throw error;
+    return data as AppointmentType[];
+};
+
+export const getAppointmentStatuses = async () => {
+    const { data, error } = await supabase
+        .from("appointmentStatus")
+        .select("*")
+        .order("name");
+
+    if (error) throw error;
+    return data as AppointmentStatus[];
+};
+
+export const getLocationTypes = async () => {
+    const { data, error } = await supabase
+        .from("locationType")
+        .select("*")
+        .order("name");
+
+    if (error) throw error;
+    return data as LocationType[];
+};
 
 export const createAppointment = async (
     doctorId: string,
     patientId: string,
     start: Date,
     end: Date,
-    reason: string
-) => {
-    try {
-        const response = await fetch(`${API_URL}/api/appointments`, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-                doctorId,
-                patientId,
-                start: start.toISOString(),
-                end: end.toISOString(),
-                reason,
-            }),
-        });
-        if (!response.ok) {
-            throw new Error("Erreur lors de la création du rendez-vous");
-        }
-        return await response.json();
-    } catch (error) {
-        console.error("Erreur:", error);
-        throw error;
-    }
+    reason: string,
+    locationTypeId: string,
+    appointmentTypeId: string
+): Promise<Appointment> => {
+    const { data, error } = await supabase
+        .from("appointment")
+        .insert({
+            id: uuidv4(),
+            doctorId,
+            patientId,
+            start: start.toISOString(),
+            end: end.toISOString(),
+            reason,
+            locationTypeId,
+            typeId: appointmentTypeId,
+            statusId: "status123", // ID du statut "En attente"
+            takedAt: new Date().toISOString(),
+        })
+        .select()
+        .single();
+
+    if (error) throw error;
+    return data as Appointment;
 };
 
-export const getPatientAppointments = async (patientId: string) => {
-    try {
-        const response = await fetch(
-            `${API_URL}/api/patients/${patientId}/appointments`
-        );
-        if (!response.ok) {
-            throw new Error("Erreur lors de la récupération des rendez-vous");
-        }
-        return await response.json();
-    } catch (error) {
-        console.error("Erreur:", error);
-        throw error;
-    }
-};
+export async function getPatientAppointments(
+    patientId: string
+): Promise<Appointment[]> {
+    const { data, error } = await supabase
+        .from("appointment")
+        .select(
+            `
+            *,
+            type:appointmentType(*),
+            status:appointmentStatus(*),
+            locationType:locationType(*),
+            doctor:doctorId(*)
+        `
+        )
+        .eq("patientId", patientId)
+        .order("start", { ascending: false });
+
+    if (error) throw error;
+    return data || [];
+}
 
 export const getDoctorAppointments = async (doctorId: string) => {
-    try {
-        const response = await fetch(
-            `${API_URL}/api/doctors/${doctorId}/appointments`
-        );
-        if (!response.ok) {
-            throw new Error("Erreur lors de la récupération des rendez-vous");
-        }
-        return await response.json();
-    } catch (error) {
-        console.error("Erreur:", error);
-        throw error;
-    }
+    const { data, error } = await supabase
+        .from("appointment")
+        .select(
+            `
+            *,
+            type:appointmentType(*),
+            status:appointmentStatus(*),
+            locationType:locationType(*),
+            patient:user!PatientAppointments(*)
+        `
+        )
+        .eq("doctorId", doctorId)
+        .order("start", { ascending: false });
+
+    if (error) throw error;
+    return data as Appointment[];
 };
 
 export const updateAppointmentStatus = async (
     appointmentId: string,
     statusId: string
 ) => {
-    try {
-        const response = await fetch(
-            `${API_URL}/api/appointments/${appointmentId}/status`,
-            {
-                method: "PUT",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({ statusId }),
-            }
-        );
-        if (!response.ok) {
-            throw new Error("Erreur lors de la mise à jour du statut");
-        }
-        return await response.json();
-    } catch (error) {
-        console.error("Erreur:", error);
-        throw error;
-    }
+    const { data, error } = await supabase
+        .from("appointment")
+        .update({ statusId })
+        .eq("id", appointmentId)
+        .select()
+        .single();
+
+    if (error) throw error;
+    return data as Appointment;
+};
+
+export const getDoctors = async () => {
+    const { data, error } = await supabase
+        .from("user")
+        .select("*")
+        .eq("role", "medecin");
+
+    if (error) throw error;
+    return data as User[];
 };

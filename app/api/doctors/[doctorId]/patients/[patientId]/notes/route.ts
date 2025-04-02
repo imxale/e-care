@@ -1,5 +1,8 @@
 import { NextResponse } from "next/server";
-import { getPatientMedicalNotes, addMedicalNote } from "@/app/api/services";
+import {
+    getPatientMedicalNotes,
+    addMedicalNote,
+} from "@/services/medicalNoteService";
 
 export async function GET(
     request: Request,
