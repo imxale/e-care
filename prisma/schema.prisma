@@ -14,13 +14,13 @@ datasource db {
 }
 
 model user {
-  id        String   @id @unique @default(uuid())
+  id        String    @id @unique @default(uuid())
   firstName String
   lastName  String
   doctorId  String?
   role      String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime  @default(now())
+  updatedAt DateTime? @updatedAt
 
   doctor   user?  @relation("DoctorRelation", fields: [doctorId], references: [id])
   patients user[] @relation("DoctorRelation")
@@ -33,7 +33,7 @@ model user {
 }
 
 model appointment {
-  id             String   @id @unique @default(uuid())
+  id             String    @id @unique @default(uuid())
   doctorId       String
   patientId      String
   reason         String
@@ -44,8 +44,8 @@ model appointment {
   statusId       String
   typeId         String
   locationTypeId String
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime? @updatedAt
 
   doctor  user @relation("DoctorAppointments", fields: [doctorId], references: [id])
   patient user @relation("PatientAppointments", fields: [patientId], references: [id])
@@ -56,40 +56,40 @@ model appointment {
 }
 
 model appointmentType {
-  id        String   @id @unique @default(uuid())
+  id        String    @id @unique @default(uuid())
   name      String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime  @default(now())
+  updatedAt DateTime? @updatedAt
 
   appointments appointment[]
 }
 
 model appointmentStatus {
-  id        String   @id @unique @default(uuid())
+  id        String    @id @unique @default(uuid())
   name      String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime  @default(now())
+  updatedAt DateTime? @updatedAt
 
   appointments appointment[]
 }
 
 model locationType {
-  id        String   @id @unique @default(uuid())
+  id        String    @id @unique @default(uuid())
   name      String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime  @default(now())
+  updatedAt DateTime? @updatedAt
 
   appointments appointment[]
 }
 
 model medicalNote {
-  id        String   @id @unique @default(uuid())
+  id        String    @id @unique @default(uuid())
   doctorId  String
   patientId String
   title     String
   content   String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime  @default(now())
+  updatedAt DateTime? @updatedAt
 
   doctor  user @relation("DoctorMedicalNotes", fields: [doctorId], references: [id])
   patient user @relation("PatientMedicalNotes", fields: [patientId], references: [id])
