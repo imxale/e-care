@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import {
-    getPatientMedicalNotes,
+    getDoctorPatientNotes,
     addMedicalNote,
 } from "@/services/medicalNoteService";
 
@@ -9,7 +9,7 @@ export async function GET(
     { params }: { params: { doctorId: string; patientId: string } }
 ) {
     try {
-        const notes = await getPatientMedicalNotes(
+        const notes = await getDoctorPatientNotes(
             params.doctorId,
             params.patientId
         );
