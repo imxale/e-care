@@ -49,6 +49,18 @@ export const createAppointment = async (
     locationTypeId: string,
     appointmentTypeId: string
 ): Promise<Appointment> => {
+    // Récupérer l'ID du statut "En attente"
+    const { data: statusData, error: statusError } = await supabase
+        .from("appointmentStatus")
+        .select("id")
+        .eq("name", "En attente")
+        .limit(1);
+
+    if (statusError) throw statusError;
+    if (!statusData || statusData.length === 0) {
+        throw new Error("Statut 'En attente' non trouvé");
+    }
+
     const { data, error } = await supabase
         .from("appointment")
         .insert({
@@ -60,7 +72,7 @@ export const createAppointment = async (
             reason,
             locationTypeId,
             typeId: appointmentTypeId,
-            statusId: "status123", // ID du statut "En attente"
+            statusId: statusData[0].id,
             takedAt: new Date().toISOString(),
         })
         .select()
@@ -100,7 +112,7 @@ export const getDoctorAppointments = async (doctorId: string) => {
             type:appointmentType(*),
             status:appointmentStatus(*),
             locationType:locationType(*),
-            patient:user!PatientAppointments(*)
+            patient:patientId(*)
         `
         )
         .eq("doctorId", doctorId)
