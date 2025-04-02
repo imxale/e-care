@@ -1,17 +1,20 @@
-import { supabase } from "./supabase";
 import type { User } from "./types";
 
-export const getDoctorPatients = async (doctorId: string) => {
-    const { data, error } = await supabase
-        .from("user")
-        .select("*")
-        .eq("doctorId", doctorId);
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
 
-    if (error) {
-        console.error("Erreur Supabase:", error);
+export const getDoctorPatients = async (doctorId: string) => {
+    try {
+        const response = await fetch(
+            `${API_URL}/api/doctors/${doctorId}/patients`
+        );
+        if (!response.ok) {
+            throw new Error("Erreur lors de la récupération des patients");
+        }
+        const patients = await response.json();
+        console.log("Données reçues de l'API:", patients);
+        return patients as User[];
+    } catch (error) {
+        console.error("Erreur:", error);
         throw error;
     }
-
-    console.log("Données reçues de Supabase:", data);
-    return data as User[];
 };
