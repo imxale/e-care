@@ -23,26 +23,25 @@ export type LocationType = {
     name: string;
 };
 
-export type Appointment = {
+export interface Appointment {
     id: string;
     doctorId: string;
     patientId: string;
-    reason: string;
     start: Date;
     end: Date;
-    takedAt: Date;
-    diagnosis?: string;
-    statusId: string;
-    typeId: string;
+    reason: string;
     locationTypeId: string;
+    typeId: string;
+    statusId: string;
+    takedAt: Date;
     createdAt: Date;
     updatedAt: Date;
     type?: AppointmentType;
     status?: AppointmentStatus;
     locationType?: LocationType;
-    doctor?: any;
-    patient?: any;
-};
+    patient?: User;
+    doctor?: User;
+}
 
 export type MedicalNote = {
     id: string;

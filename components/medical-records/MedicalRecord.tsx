@@ -1,8 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { format } from "date-fns";
-import { fr } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -15,7 +13,7 @@ import {
     DialogTitle,
     DialogTrigger,
 } from "@/components/ui/dialog";
-import { Plus, FileText, Calendar } from "lucide-react";
+import { Plus, FileText } from "lucide-react";
 import { type MedicalNote } from "@/services";
 
 interface MedicalRecordProps {

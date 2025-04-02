@@ -22,35 +22,7 @@ interface AppointmentListProps {
 export function AppointmentList({
     appointments,
     onCancel,
-    onModify,
-    userRole,
 }: AppointmentListProps) {
-    const getStatusColor = (statusId: string) => {
-        switch (statusId) {
-            case "status123": // Confirmed
-                return "bg-green-100 text-green-800";
-            case "status456": // Completed
-                return "bg-blue-100 text-blue-800";
-            case "status789": // Cancelled
-                return "bg-red-100 text-red-800";
-            default:
-                return "bg-gray-100 text-gray-800";
-        }
-    };
-
-    const getStatusText = (statusId: string) => {
-        switch (statusId) {
-            case "status123":
-                return "Confirmé";
-            case "status456":
-                return "Terminé";
-            case "status789":
-                return "Annulé";
-            default:
-                return "En attente";
-        }
-    };
-
     return (
         <div className="rounded-md border">
             <Table>
@@ -72,36 +44,45 @@ export function AppointmentList({
                                 )}
                             </TableCell>
                             <TableCell>
-                                {new Date(appointment.start).toLocaleTimeString(
-                                    "fr-FR",
-                                    { hour: "2-digit", minute: "2-digit" }
-                                )}
+                                {new Date(
+                                    new Date(appointment.start).getTime() +
+                                        2 * 60 * 60 * 1000
+                                ).toLocaleTimeString("fr-FR", {
+                                    hour: "2-digit",
+                                    minute: "2-digit",
+                                })}
                             </TableCell>
+                            <TableCell>{appointment.type?.name}</TableCell>
                             <TableCell>
-                                {appointment.appointmentType?.name}
-                            </TableCell>
-                            <TableCell>
-                                <Badge
-                                    className={getStatusColor(
-                                        appointment.statusId
-                                    )}
-                                >
-                                    {getStatusText(appointment.statusId)}
-                                </Badge>
+                                <div className="flex items-center gap-2">
+                                    <Badge
+                                        className={
+                                            appointment.status?.name ===
+                                            "Confirmé"
+                                                ? "bg-green-100 text-green-800 hover:bg-green-200"
+                                                : appointment.status?.name ===
+                                                  "En attente"
+                                                ? "bg-yellow-100 text-yellow-800 hover:bg-yellow-200"
+                                                : appointment.status?.name ===
+                                                      "Annulé" ||
+                                                  appointment.status?.name ===
+                                                      "Annulé par le patient" ||
+                                                  appointment.status?.name ===
+                                                      "Annulé par le médecin"
+                                                ? "bg-red-100 text-red-800 hover:bg-red-200"
+                                                : "bg-gray-100 text-gray-800 hover:bg-gray-200"
+                                        }
+                                    >
+                                        {appointment.status?.name ||
+                                            "Statut inconnu"}
+                                    </Badge>
+                                </div>
                             </TableCell>
                             <TableCell className="text-right">
-                                {appointment.statusId !== "status789" && (
-                                    <>
-                                        <Button
-                                            variant="outline"
-                                            size="sm"
-                                            onClick={() =>
-                                                onModify(appointment.id)
-                                            }
-                                            className="mr-2"
-                                        >
-                                            Modifier
-                                        </Button>
+                                {appointment.status?.name !==
+                                    "Annulé par le patient" &&
+                                    appointment.status?.name !==
+                                        "Annulé par le médecin" && (
                                         <Button
                                             variant="destructive"
                                             size="sm"
@@ -111,8 +92,7 @@ export function AppointmentList({
                                         >
                                             Annuler
                                         </Button>
-                                    </>
-                                )}
+                                    )}
                             </TableCell>
                         </TableRow>
                     ))}

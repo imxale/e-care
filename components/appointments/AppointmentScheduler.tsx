@@ -39,7 +39,6 @@ interface AppointmentSchedulerProps {
 }
 
 export function AppointmentScheduler({
-    doctorId,
     doctorName,
     onSchedule,
 }: AppointmentSchedulerProps) {

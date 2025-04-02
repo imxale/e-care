@@ -124,11 +124,25 @@ export const getDoctorAppointments = async (doctorId: string) => {
 
 export const updateAppointmentStatus = async (
     appointmentId: string,
-    statusId: string
-) => {
+    userId: string,
+    userRole: "patient" | "medecin"
+): Promise<Appointment> => {
+    // Récupérer l'ID du statut approprié selon le rôle
+    const statusName =
+        userRole === "patient"
+            ? "Annulé par le patient"
+            : "Annulé par le médecin";
+    const { data: statusData, error: statusError } = await supabase
+        .from("appointmentStatus")
+        .select("id")
+        .eq("name", statusName)
+        .single();
+
+    if (statusError) throw statusError;
+
     const { data, error } = await supabase
         .from("appointment")
-        .update({ statusId })
+        .update({ statusId: statusData.id })
         .eq("id", appointmentId)
         .select()
         .single();

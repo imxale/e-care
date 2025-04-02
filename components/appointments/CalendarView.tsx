@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { Calendar } from "./Calendar";
-import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import {
     Select,
@@ -11,9 +10,8 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { CardContent } from "@/components/ui/card";
 import { format } from "date-fns";
-import { fr } from "date-fns/locale";
 import { type Appointment } from "@/services";
 
 interface TimeSlot {
@@ -42,15 +40,9 @@ interface CalendarViewProps {
     onCancel?: (id: string) => Promise<void>;
 }
 
-export function CalendarView({
-    userRole,
-    appointments,
-    onSchedule,
-    onCancel,
-}: CalendarViewProps) {
+export function CalendarView({ appointments }: CalendarViewProps) {
     const [selectedDate, setSelectedDate] = useState<Date>();
     const [selectedTime, setSelectedTime] = useState<string>("");
-    const [isLoading, setIsLoading] = useState(false);
 
     // Mettre à jour la disponibilité des créneaux en fonction des rendez-vous
     const getAvailableTimeSlots = (date: Date) => {
@@ -69,81 +61,36 @@ export function CalendarView({
         });
     };
 
-    const handleAction = async () => {
-        if (!selectedDate || !selectedTime) return;
-
-        setIsLoading(true);
-        try {
-            if (userRole === "patient" && onSchedule) {
-                await onSchedule(selectedDate, selectedTime);
-            }
-            // Reset form after successful action
-            setSelectedDate(undefined);
-            setSelectedTime("");
-        } catch (error) {
-            console.error("Erreur lors de l'action:", error);
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
     const availableSlots = selectedDate
         ? getAvailableTimeSlots(selectedDate)
         : DEFAULT_TIME_SLOTS;
 
     return (
-        <Card>
-            <CardHeader>
-                <CardTitle>
-                    {userRole === "patient"
-                        ? "Prendre rendez-vous"
-                        : "Gérer les disponibilités"}
-                </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-                <div className="space-y-2">
-                    <Label>Date</Label>
-                    <Calendar
-                        selected={selectedDate}
-                        onSelect={setSelectedDate}
-                    />
-                </div>
+        <CardContent className="space-y-4">
+            <div className="space-y-2">
+                <Label>Date</Label>
+                <Calendar selected={selectedDate} onSelect={setSelectedDate} />
+            </div>
 
-                <div className="space-y-2">
-                    <Label>Heure</Label>
-                    <Select
-                        value={selectedTime}
-                        onValueChange={setSelectedTime}
-                    >
-                        <SelectTrigger>
-                            <SelectValue placeholder="Sélectionner une heure" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {availableSlots.map((slot) => (
-                                <SelectItem
-                                    key={slot.id}
-                                    value={slot.time}
-                                    disabled={!slot.available}
-                                >
-                                    {slot.time}
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                </div>
-
-                {userRole === "patient" && (
-                    <Button
-                        onClick={handleAction}
-                        disabled={!selectedDate || !selectedTime || isLoading}
-                        className="w-full"
-                    >
-                        {isLoading
-                            ? "Traitement en cours..."
-                            : "Prendre rendez-vous"}
-                    </Button>
-                )}
-            </CardContent>
-        </Card>
+            <div className="space-y-2">
+                <Label>Heure</Label>
+                <Select value={selectedTime} onValueChange={setSelectedTime}>
+                    <SelectTrigger>
+                        <SelectValue placeholder="Sélectionner une heure" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        {availableSlots.map((slot) => (
+                            <SelectItem
+                                key={slot.id}
+                                value={slot.time}
+                                disabled={!slot.available}
+                            >
+                                {slot.time}
+                            </SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
+            </div>
+        </CardContent>
     );
 }

@@ -101,7 +101,8 @@ export default function MedecinDashboard() {
 
     const handleCancelAppointment = async (id: string) => {
         try {
-            await updateAppointmentStatus(id, "status789"); // ID du statut "Annulé"
+            if (!user?.id) return;
+            await updateAppointmentStatus(id, user.id, "medecin");
             setAppointments(
                 appointments.map((apt) =>
                     apt.id === id ? { ...apt, statusId: "status789" } : apt
