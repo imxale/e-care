@@ -8,8 +8,6 @@ import type {
 } from "./types";
 import { v4 as uuidv4 } from "uuid";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
-
 export const getAppointmentTypes = async () => {
     const { data, error } = await supabase
         .from("appointmentType")

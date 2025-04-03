@@ -49,7 +49,6 @@ export function PatientList({ patients, onSelectPatient }: PatientListProps) {
                         <TableRow>
                             <TableHead>Nom</TableHead>
                             <TableHead>Prénom</TableHead>
-                            <TableHead>Email</TableHead>
                             <TableHead className="w-[100px]">Actions</TableHead>
                         </TableRow>
                     </TableHeader>
@@ -58,7 +57,6 @@ export function PatientList({ patients, onSelectPatient }: PatientListProps) {
                             <TableRow key={patient.id}>
                                 <TableCell>{patient.lastName}</TableCell>
                                 <TableCell>{patient.firstName}</TableCell>
-                                <TableCell>{patient.id_auth}</TableCell>
                                 <TableCell>
                                     <Button
                                         variant="outline"

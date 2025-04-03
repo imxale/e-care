@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, Suspense } from "react";
+import { useState, Suspense, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/lib/hooks/useAuth";
@@ -22,24 +22,35 @@ function LoginForm() {
     const searchParams = useSearchParams();
     const redirectTo = searchParams.get("redirectTo");
 
-    const { signIn, isLoading, userRole } = useAuth();
+    const { signIn, isLoading, userRole, user } = useAuth();
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
+    const [isRedirecting, setIsRedirecting] = useState(false);
+
+    // Effet pour gérer la redirection après connexion
+    useEffect(() => {
+        // Si l'utilisateur est connecté et que nous sommes en attente de redirection
+        if (user && userRole && isRedirecting && !isLoading) {
+            if (redirectTo) {
+                router.push(redirectTo);
+            } else {
+                router.push(`/dashboard/${userRole}`);
+            }
+        }
+    }, [user, userRole, isRedirecting, isLoading, redirectTo, router]);
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
 
         try {
             await signIn(email, password);
-            // Rediriger vers la page spécifique au rôle ou utiliser redirectTo s'il est défini
-            if (redirectTo) {
-                router.push(redirectTo);
-            } else {
-                const role = userRole || "patient";
-                router.push(`/dashboard/${role}`);
-            }
+            
+            // Marquer comme en attente de redirection
+            // La redirection effective sera gérée par l'useEffect
+            setIsRedirecting(true);
         } catch (error) {
             console.error("Erreur lors de la connexion :", error);
+            setIsRedirecting(false);
         }
     };
 
@@ -75,8 +86,8 @@ function LoginForm() {
                     </Link>
                 </div>
             </div>
-            <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? "Connexion en cours..." : "Se connecter"}
+            <Button type="submit" className="w-full" disabled={isLoading || isRedirecting}>
+                {isLoading || isRedirecting ? "Connexion en cours..." : "Se connecter"}
             </Button>
         </form>
     );

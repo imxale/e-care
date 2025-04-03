@@ -14,6 +14,8 @@ export default function SignUpPage() {
   const router = useRouter()
   const { signUp, isLoading } = useAuth()
   const [email, setEmail] = useState('')
+  const [firstName, setFirstName] = useState('')
+  const [lastName, setLastName] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [role, setRole] = useState<'patient' | 'medecin' | 'admin'>('patient')
@@ -33,8 +35,15 @@ export default function SignUpPage() {
       return
     }
     
+    // Validation des champs obligatoires
+    if (!firstName.trim() || !lastName.trim()) {
+      toast.error('Les champs prénom et nom sont obligatoires')
+      return
+    }
+    
     try {
-      await signUp(email, password, role)
+      // Inclure firstName et lastName dans les métadonnées
+      await signUp(email, password, role, { firstName, lastName })
       router.push('/verify-email')
     } catch (error) {
       console.error('Erreur lors de l\'inscription :', error)
@@ -62,6 +71,30 @@ export default function SignUpPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
               />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="firstName">Prénom</Label>
+                <Input
+                  id="firstName"
+                  type="text"
+                  placeholder="Jean"
+                  required
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="lastName">Nom</Label>
+                <Input
+                  id="lastName"
+                  type="text"
+                  placeholder="Dupont"
+                  required
+                  value={lastName}
+                  onChange={(e) => setLastName(e.target.value)}
+                />
+              </div>
             </div>
             <div className="space-y-2">
               <Label htmlFor="password">Mot de passe</Label>

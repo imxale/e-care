@@ -20,7 +20,8 @@ type AuthContextType = {
     signUp: (
         email: string,
         password: string,
-        role?: "patient" | "medecin" | "admin"
+        role?: "patient" | "medecin" | "admin",
+        metadata?: Record<string, string | number | boolean>
     ) => Promise<void>;
     signIn: (email: string, password: string) => Promise<void>;
     signOut: () => Promise<void>;
@@ -38,6 +39,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const supabase = createClient();
 
+    // Fonction pour obtenir le rôle utilisateur (depuis les métadonnées)
+    const getUserRole = (user: User | null) => {
+        if (!user) return null;
+        return user.user_metadata?.role || "patient";
+    };
+
     useEffect(() => {
         const initUser = async () => {
             try {
@@ -49,7 +56,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 if (session) {
                     const user = session.user;
                     setUser(user);
-                    setUserRole(user.user_metadata?.role || "patient");
+                    setUserRole(getUserRole(user));
                     setIsEmailVerified(!!user.email_confirmed_at);
                 }
             } catch (error) {
@@ -73,7 +80,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             if (session) {
                 const user = session.user;
                 setUser(user);
-                setUserRole(user.user_metadata?.role || "patient");
+                setUserRole(getUserRole(user));
                 setIsEmailVerified(!!user.email_confirmed_at);
             } else {
                 setUser(null);
@@ -92,11 +99,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const signUp = async (
         email: string,
         password: string,
-        role: "patient" | "medecin" | "admin" = "patient"
+        role: "patient" | "medecin" | "admin" = "patient",
+        metadata: Record<string, string | number | boolean> = {}
     ) => {
         try {
             setIsLoading(true);
-            await AuthService.signUp({ email, password, role });
+            await AuthService.signUp({ email, password, role, metadata });
             toast.success("Inscription réussie", {
                 description:
                     "Un email de confirmation vous a été envoyé. Veuillez vérifier votre boîte de réception.",
@@ -121,6 +129,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             const { session } = await AuthService.signIn({ email, password });
 
             if (session?.user) {
+                // Mettre à jour le rôle après connexion
+                const role = getUserRole(session.user);
+                setUserRole(role);
+                
                 if (!session.user.email_confirmed_at) {
                     toast.warning("Email non vérifié", {
                         description:
@@ -148,6 +160,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         try {
             setIsLoading(true);
             await AuthService.signOut();
+            // Réinitialiser les états locaux
+            setUser(null);
+            setUserRole(null);
+            setIsEmailVerified(false);
             toast.success("Déconnexion réussie");
         } catch (error) {
             const errorMessage =
