@@ -2,7 +2,6 @@ import { supabase } from "../lib/supabase";
 import type { MedicalNote } from "./types";
 import { v4 as uuidv4 } from "uuid";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
 
 export const getDoctorPatientNotes = async (
     doctorId: string,

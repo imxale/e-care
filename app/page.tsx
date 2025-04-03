@@ -27,7 +27,7 @@ export default function HomePage() {
       <div className="text-center">
         <h1 className="text-2xl font-bold">Chargement...</h1>
         <p className="text-gray-500">Redirection en cours</p>
-      </div>
+        </div>
     </div>
   );
 }

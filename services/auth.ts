@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/client";
+import { User } from "@supabase/supabase-js";
 
 // Types pour les fonctions d'authentification
 type SignUpParams = {
@@ -18,15 +19,18 @@ export const AuthService = {
   async signUp({ email, password, role = "patient", metadata = {} }: SignUpParams) {
     const supabase = createClient();
     
+    // Inclure firstName et lastName dans les metadata si présents
+    const userMetadata = {
+      role,
+      ...metadata
+    };
+    
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
         emailRedirectTo: `${window.location.origin}/auth/callback`,
-        data: {
-          role,
-          ...metadata
-        },
+        data: userMetadata,
       },
     });
     
@@ -103,5 +107,11 @@ export const AuthService = {
   async isEmailConfirmed() {
     const user = await this.getUser();
     return user?.email_confirmed_at ? true : false;
+  },
+  
+  // Récupérer le rôle utilisateur depuis les métadonnées
+  getRoleFromUserMetadata(user: User | null) {
+    if (!user) return null;
+    return user.user_metadata?.role || null;
   }
 }; 
