@@ -1,0 +1,96 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model user {
+  id        String    @id @unique @default(uuid())
+  firstName String
+  lastName  String
+  doctorId  String?
+  role      String?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime? @updatedAt
+
+  doctor   user?  @relation("DoctorRelation", fields: [doctorId], references: [id])
+  patients user[] @relation("DoctorRelation")
+
+  doctorAppointments  appointment[] @relation("DoctorAppointments")
+  patientAppointments appointment[] @relation("PatientAppointments")
+
+  medicalNotes        medicalNote[] @relation("DoctorMedicalNotes")
+  medicalNotesPatient medicalNote[] @relation("PatientMedicalNotes")
+}
+
+model appointment {
+  id             String    @id @unique @default(uuid())
+  doctorId       String
+  patientId      String
+  reason         String
+  start          DateTime
+  end            DateTime
+  takedAt        DateTime
+  diagnosis      String?
+  statusId       String
+  typeId         String
+  locationTypeId String
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime? @updatedAt
+
+  doctor  user @relation("DoctorAppointments", fields: [doctorId], references: [id])
+  patient user @relation("PatientAppointments", fields: [patientId], references: [id])
+
+  type         appointmentType   @relation(fields: [typeId], references: [id])
+  status       appointmentStatus @relation(fields: [statusId], references: [id])
+  locationType locationType      @relation(fields: [locationTypeId], references: [id])
+}
+
+model appointmentType {
+  id        String    @id @unique @default(uuid())
+  name      String
+  createdAt DateTime  @default(now())
+  updatedAt DateTime? @updatedAt
+
+  appointments appointment[]
+}
+
+model appointmentStatus {
+  id        String    @id @unique @default(uuid())
+  name      String
+  createdAt DateTime  @default(now())
+  updatedAt DateTime? @updatedAt
+
+  appointments appointment[]
+}
+
+model locationType {
+  id        String    @id @unique @default(uuid())
+  name      String
+  createdAt DateTime  @default(now())
+  updatedAt DateTime? @updatedAt
+
+  appointments appointment[]
+}
+
+model medicalNote {
+  id        String    @id @unique @default(uuid())
+  doctorId  String
+  patientId String
+  title     String
+  content   String
+  createdAt DateTime  @default(now())
+  updatedAt DateTime? @updatedAt
+
+  doctor  user @relation("DoctorMedicalNotes", fields: [doctorId], references: [id])
+  patient user @relation("PatientMedicalNotes", fields: [patientId], references: [id])
+}
