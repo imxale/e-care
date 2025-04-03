@@ -4,10 +4,10 @@ import { getUserById, setPatientDoctor, getPatientDoctor } from "@/services/user
 // GET: Récupérer le médecin traitant d'un patient
 export async function GET(
   request: NextRequest,
-  { params }: { params: { patientId: string } }
+  { params }: { params: Promise<{ patientId: string }> }
 ) {
   try {
-    const { patientId } = params;
+    const { patientId } = await params;
     
     const doctor = await getPatientDoctor(patientId);
     
@@ -24,10 +24,10 @@ export async function GET(
 // POST: Définir le médecin traitant d'un patient
 export async function POST(
   request: NextRequest,
-  { params }: { params: { patientId: string } }
+  { params }: { params: Promise<{ patientId: string }> }
 ) {
   try {
-    const { patientId } = params;
+    const { patientId } = await params;
     const { doctorId } = await request.json();
     
     if (!doctorId) {
