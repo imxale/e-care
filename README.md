@@ -71,3 +71,6 @@ A GitHub Action is set up to run tests and linting on both `develop` and `main` 
 - 💡 Kieran Huon - [GitHub Profile](https://github.com/Kieran-Huon)
 - 🚀 Axel Blanchard -[GitHub Profile](https://github.com/imxale)
 
+## 📝 UML
+
+![UML](./uml.png)
