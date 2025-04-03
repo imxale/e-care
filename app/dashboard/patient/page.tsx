@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { AppointmentList } from "@/components/appointments/AppointmentList";
-import { Calendar } from "@/components/ui/calendar";
 import { MedicalRecord } from "@/components/medical-records/MedicalRecord";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
@@ -23,17 +22,19 @@ import {
     PopoverContent,
     PopoverTrigger,
 } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { CalendarIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { DoctorSelectionModal } from "@/components/patient/DoctorSelectionModal";
 import {
     type Appointment,
     type MedicalNote,
     type AppointmentType,
     type LocationType,
     type User,
-} from "@/services";
+} from "@/services/types";
 
 interface TimeSlot {
     id: string;
@@ -77,12 +78,50 @@ export default function PatientDashboard() {
         useState<string>("");
     const [selectedAppointmentType, setSelectedAppointmentType] =
         useState<string>("");
+    const [patientDoctor, setPatientDoctor] = useState<User | null>(null);
+    const [isDoctorModalOpen, setIsDoctorModalOpen] = useState<boolean>(false);
+    const [needsDoctor, setNeedsDoctor] = useState<boolean>(false);
 
     useEffect(() => {
         if (!isLoading && (!user || userRole !== "patient")) {
             router.push("/login");
         }
     }, [user, userRole, isLoading, router]);
+
+    // Vérifier si le patient a un médecin traitant
+    useEffect(() => {
+        const checkPatientDoctor = async () => {
+            if (user?.id) {
+                try {
+                    const response = await fetch(`/api/patients/${user.id}/doctor`);
+                    
+                    if (response.ok) {
+                        const doctorData = await response.json();
+                        setPatientDoctor(doctorData);
+                        setNeedsDoctor(!doctorData);
+                    } else {
+                        // Si la requête échoue ou si aucun médecin n'est trouvé
+                        setPatientDoctor(null);
+                        setNeedsDoctor(true);
+                    }
+                } catch (error) {
+                    console.error("Erreur lors de la vérification du médecin traitant:", error);
+                    setNeedsDoctor(true);
+                }
+            }
+        };
+
+        if (!isLoading && user) {
+            checkPatientDoctor();
+        }
+    }, [isLoading, user]);
+
+    // Ouvrir automatiquement le modal si le patient n'a pas de médecin traitant
+    useEffect(() => {
+        if (!loading && needsDoctor) {
+            setIsDoctorModalOpen(true);
+        }
+    }, [loading, needsDoctor]);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -234,6 +273,23 @@ export default function PatientDashboard() {
         }
     };
 
+    // Gestionnaire après configuration du médecin traitant
+    const handleDoctorSet = async () => {
+        // Recharger les données du médecin traitant
+        if (user?.id) {
+            try {
+                const response = await fetch(`/api/patients/${user.id}/doctor`);
+                if (response.ok) {
+                    const doctorData = await response.json();
+                    setPatientDoctor(doctorData);
+                    setNeedsDoctor(false);
+                }
+            } catch (error) {
+                console.error("Erreur lors du rechargement du médecin traitant:", error);
+            }
+        }
+    };
+
     if (isLoading || loading) {
         return (
             <div className="flex items-center justify-center min-h-screen">
@@ -250,51 +306,84 @@ export default function PatientDashboard() {
                     Déconnexion
                 </Button>
             </div>
-            <div className="bg-blue-50 p-4 rounded-lg mb-6">
-                <p className="text-blue-800">
-                    Bienvenue,{" "}
-                    <span className="font-medium">{user?.email}</span> !
-                </p>
-                <p className="text-blue-700 text-sm mt-1">
-                    Votre rôle : <span className="font-medium">Patient</span>
-                </p>
+            
+            {/* Afficher les informations du médecin traitant */}
+            <div className="bg-blue-50 p-4 rounded-lg mb-4">
+                <h2 className="text-lg font-medium mb-2">Votre médecin traitant</h2>
+                {patientDoctor ? (
+                    <p>
+                        Dr. {patientDoctor.firstName} {patientDoctor.lastName}
+                    </p>
+                ) : (
+                    <div className="flex items-center justify-between">
+                        <p className="text-gray-500">Vous n&apos;avez pas encore de médecin traitant</p>
+                        <Button 
+                            onClick={() => setIsDoctorModalOpen(true)}
+                            size="sm"
+                        >
+                            Choisir un médecin
+                        </Button>
+                    </div>
+                )}
             </div>
 
-            <Tabs defaultValue="appointments" className="space-y-4">
-                <TabsList>
-                    <TabsTrigger value="appointments">
-                        Mes rendez-vous
+            <Tabs defaultValue="appointments" className="w-full">
+                <TabsList className="mb-4">
+                    <TabsTrigger value="appointments">Rendez-vous</TabsTrigger>
+                    <TabsTrigger value="medical-records">
+                        Dossier médical
                     </TabsTrigger>
-                    <TabsTrigger value="schedule">
+                    <TabsTrigger value="schedule-appointment">
                         Prendre rendez-vous
-                    </TabsTrigger>
-                    <TabsTrigger value="records">
-                        Mon dossier médical
                     </TabsTrigger>
                 </TabsList>
 
-                <TabsContent value="appointments" className="space-y-4">
-                    <AppointmentList
-                        appointments={appointments}
-                        onCancel={handleCancelAppointment}
-                        userRole="patient"
-                    />
-                </TabsContent>
-
-                <TabsContent value="schedule" className="space-y-4">
+                <TabsContent value="appointments">
                     <Card>
                         <CardHeader>
-                            <CardTitle>Prendre rendez-vous</CardTitle>
+                            <CardTitle>Vos rendez-vous</CardTitle>
                         </CardHeader>
-                        <CardContent className="space-y-6">
-                            <div className="max-w-2xl mx-auto space-y-6">
+                        <CardContent>
+                            <AppointmentList
+                                appointments={appointments}
+                                onCancel={handleCancelAppointment}
+                                userRole="patient"
+                            />
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+
+                <TabsContent value="medical-records">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Votre dossier médical</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <MedicalRecord 
+                                notes={notes} 
+                                patientId={user?.id || ""}
+                                patientName={user?.email || "Patient"}
+                                onAddNote={async () => {}} // Les patients ne peuvent pas ajouter de notes
+                                userRole="patient"
+                            />
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+
+                <TabsContent value="schedule-appointment">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Prendre un rendez-vous</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="space-y-4">
                                 <div className="space-y-2">
                                     <Label htmlFor="doctor">Médecin</Label>
                                     <Select
                                         value={selectedDoctor}
                                         onValueChange={setSelectedDoctor}
                                     >
-                                        <SelectTrigger>
+                                        <SelectTrigger id="doctor">
                                             <SelectValue placeholder="Sélectionner un médecin" />
                                         </SelectTrigger>
                                         <SelectContent>
@@ -312,15 +401,15 @@ export default function PatientDashboard() {
                                 </div>
 
                                 <div className="space-y-2">
-                                    <Label htmlFor="location">
-                                        Type de rendez-vous
+                                    <Label htmlFor="location-type">
+                                        Type de consultation
                                     </Label>
                                     <Select
                                         value={selectedLocationType}
                                         onValueChange={setSelectedLocationType}
                                     >
-                                        <SelectTrigger>
-                                            <SelectValue placeholder="Sélectionner le type" />
+                                        <SelectTrigger id="location-type">
+                                            <SelectValue placeholder="Sélectionner un type" />
                                         </SelectTrigger>
                                         <SelectContent>
                                             {locationTypes.map((type) => (
@@ -336,17 +425,15 @@ export default function PatientDashboard() {
                                 </div>
 
                                 <div className="space-y-2">
-                                    <Label htmlFor="type">
-                                        Type de consultation
+                                    <Label htmlFor="appointment-type">
+                                        Motif de consultation
                                     </Label>
                                     <Select
                                         value={selectedAppointmentType}
-                                        onValueChange={
-                                            setSelectedAppointmentType
-                                        }
+                                        onValueChange={setSelectedAppointmentType}
                                     >
-                                        <SelectTrigger>
-                                            <SelectValue placeholder="Sélectionner le type" />
+                                        <SelectTrigger id="appointment-type">
+                                            <SelectValue placeholder="Sélectionner un motif" />
                                         </SelectTrigger>
                                         <SelectContent>
                                             {appointmentTypes.map((type) => (
@@ -362,66 +449,59 @@ export default function PatientDashboard() {
                                 </div>
 
                                 <div className="space-y-2">
-                                    <Label htmlFor="reason">
-                                        Motif de consultation
-                                    </Label>
+                                    <Label htmlFor="reason">Raison</Label>
                                     <Input
                                         id="reason"
                                         value={reason}
                                         onChange={(e) =>
                                             setReason(e.target.value)
                                         }
-                                        placeholder="Décrivez le motif de votre consultation"
+                                        placeholder="Décrivez brièvement votre situation"
                                     />
                                 </div>
 
                                 <div className="space-y-2">
-                                    <Label>Date</Label>
+                                    <Label htmlFor="date">Date</Label>
                                     <Popover>
                                         <PopoverTrigger asChild>
                                             <Button
-                                                variant={"outline"}
+                                                variant="outline"
                                                 className={cn(
                                                     "w-full justify-start text-left font-normal",
-                                                    !selectedDate &&
-                                                        "text-muted-foreground"
+                                                    !selectedDate && "text-muted-foreground"
                                                 )}
                                             >
                                                 <CalendarIcon className="mr-2 h-4 w-4" />
                                                 {selectedDate ? (
-                                                    format(
-                                                        selectedDate,
-                                                        "PPP",
-                                                        { locale: fr }
-                                                    )
+                                                    format(selectedDate, "PPP", { locale: fr })
                                                 ) : (
-                                                    <span>
-                                                        Choisir une date
-                                                    </span>
+                                                    <span>Choisir une date</span>
                                                 )}
                                             </Button>
                                         </PopoverTrigger>
-                                        <PopoverContent
-                                            className="w-auto p-0"
-                                            align="start"
-                                        >
+                                        <PopoverContent className="w-auto p-0" align="start">
                                             <Calendar
                                                 mode="single"
                                                 selected={selectedDate}
                                                 onSelect={setSelectedDate}
-                                                initialFocus
+                                                locale={fr}
+                                                disabled={(date) =>
+                                                    date < new Date(new Date().setHours(0, 0, 0, 0)) ||
+                                                    date.getDay() === 0 ||
+                                                    date.getDay() === 6
+                                                }
                                             />
                                         </PopoverContent>
                                     </Popover>
                                 </div>
 
                                 <div className="space-y-2">
-                                    <Label>Heure</Label>
+                                    <Label htmlFor="time">Heure</Label>
                                     <Select
                                         value={selectedTimeSlot || ""}
                                         onValueChange={setSelectedTimeSlot}
                                     >
-                                        <SelectTrigger>
+                                        <SelectTrigger id="time">
                                             <SelectValue placeholder="Sélectionner une heure" />
                                         </SelectTrigger>
                                         <SelectContent>
@@ -441,14 +521,14 @@ export default function PatientDashboard() {
                                 <Button
                                     onClick={handleScheduleAppointment}
                                     disabled={
+                                        !selectedDoctor ||
                                         !selectedDate ||
                                         !selectedTimeSlot ||
-                                        !selectedDoctor ||
-                                        !reason ||
                                         !selectedLocationType ||
-                                        !selectedAppointmentType
+                                        !selectedAppointmentType ||
+                                        !reason
                                     }
-                                    className="w-full"
+                                    className="w-full mt-6"
                                 >
                                     Confirmer le rendez-vous
                                 </Button>
@@ -456,17 +536,20 @@ export default function PatientDashboard() {
                         </CardContent>
                     </Card>
                 </TabsContent>
-
-                <TabsContent value="records">
-                    <MedicalRecord
-                        patientId={user?.id || ""}
-                        patientName={user?.email || "Patient"}
-                        notes={notes}
-                        onAddNote={async () => {}} // Patients can't add notes
-                        userRole="patient"
-                    />
-                </TabsContent>
             </Tabs>
+
+            {/* Modal de sélection du médecin traitant */}
+            <DoctorSelectionModal
+                patientId={user?.id || ""}
+                isOpen={isDoctorModalOpen}
+                onClose={() => {
+                    // Ne permettre la fermeture que si le patient a un médecin ou est en mode développement
+                    if (patientDoctor || process.env.NODE_ENV === "development") {
+                        setIsDoctorModalOpen(false);
+                    }
+                }}
+                onDoctorSet={handleDoctorSet}
+            />
         </div>
     );
 }
