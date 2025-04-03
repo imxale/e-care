@@ -1,17 +1,18 @@
-import { NextResponse } from "next/server";
+import {NextRequest, NextResponse} from "next/server";
 import {
     getDoctorPatientNotes,
     addMedicalNote,
 } from "@/services/medicalNoteService";
 
 export async function GET(
-    request: Request,
-    { params }: { params: { doctorId: string; patientId: string } }
+    request: NextRequest,
+    { params }: { params: Promise<{ doctorId: string; patientId: string }> }
 ) {
+    const { doctorId, patientId } = await params;
     try {
         const notes = await getDoctorPatientNotes(
-            params.doctorId,
-            params.patientId
+            doctorId,
+            patientId
         );
         return NextResponse.json(notes);
     } catch (error) {
@@ -24,15 +25,16 @@ export async function GET(
 }
 
 export async function POST(
-    request: Request,
-    { params }: { params: { doctorId: string; patientId: string } }
+    request: NextRequest,
+    { params }: { params: Promise<{ doctorId: string; patientId: string }> }
 ) {
+    const { doctorId, patientId } = await params;
     try {
         const note = await request.json();
         const newNote = await addMedicalNote({
             ...note,
-            doctorId: params.doctorId,
-            patientId: params.patientId,
+            doctorId,
+            patientId,
         });
         return NextResponse.json(newNote);
     } catch (error) {

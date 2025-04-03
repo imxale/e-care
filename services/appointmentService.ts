@@ -124,7 +124,6 @@ export const getDoctorAppointments = async (doctorId: string) => {
 
 export const updateAppointmentStatus = async (
     appointmentId: string,
-    userId: string,
     userRole: "patient" | "medecin"
 ): Promise<Appointment> => {
     // Récupérer l'ID du statut approprié selon le rôle

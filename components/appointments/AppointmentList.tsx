@@ -30,6 +30,7 @@ export function AppointmentList({
                         <TableHead>Date</TableHead>
                         <TableHead>Heure</TableHead>
                         <TableHead>Type</TableHead>
+                        <TableHead>Raison</TableHead>
                         <TableHead>Statut</TableHead>
                         <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
@@ -52,6 +53,10 @@ export function AppointmentList({
                                 })}
                             </TableCell>
                             <TableCell>{appointment.type?.name}</TableCell>
+                            <TableCell>
+                                {appointment.reason ||
+                                    "Raison non spécifiée"}
+                            </TableCell>
                             <TableCell>
                                 <div className="flex items-center gap-2">
                                     <Badge

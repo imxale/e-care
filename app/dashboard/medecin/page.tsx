@@ -9,11 +9,6 @@ import { MedicalRecord } from "@/components/medical-records/MedicalRecord";
 import { PatientList } from "@/components/medical-records/PatientList";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
-    getDoctorAppointments,
-    getDoctorPatients,
-    getDoctorPatientNotes,
-    addMedicalNote,
-    updateAppointmentStatus,
     type Appointment,
     type User,
     type MedicalNote,
@@ -41,12 +36,18 @@ export default function MedecinDashboard() {
             if (user?.id) {
                 try {
                     setLoading(true);
-                    const [appointmentsData, patientsData] = await Promise.all([
-                        getDoctorAppointments(user.id),
-                        getDoctorPatients(user.id),
-                    ]);
-                    setAppointments(appointmentsData);
-                    setPatients(patientsData);
+
+                    fetch("/api/doctors/" + user.id + "/appointments")
+                        .then((res) => res.json())
+                        .then((data) => {
+                            setAppointments(data);
+                        });
+
+                    fetch("/api/doctors/" + user.id + "/patients")
+                        .then((res) => res.json())
+                        .then((data) => {
+                            setPatients(data)
+                        });
                 } catch (error) {
                     console.error(
                         "Erreur lors du chargement des données:",
@@ -65,11 +66,11 @@ export default function MedecinDashboard() {
         const fetchNotes = async () => {
             if (selectedPatientId && user?.id) {
                 try {
-                    const notesData = await getDoctorPatientNotes(
-                        user.id,
-                        selectedPatientId
-                    );
-                    setNotes(notesData);
+                    fetch('/api/doctors/' + user.id + '/patients/' + selectedPatientId + '/notes')
+                        .then((res) => res.json())
+                        .then((data) => {
+                            setNotes(data);
+                        });
                 } catch (error) {
                     console.error(
                         "Erreur lors du chargement des notes:",
@@ -94,28 +95,62 @@ export default function MedecinDashboard() {
     const handleCancelAppointment = async (id: string) => {
         try {
             if (!user?.id) return;
-            await updateAppointmentStatus(id, user.id, "medecin");
-            setAppointments(
-                appointments.map((apt) =>
-                    apt.id === id ? { ...apt, statusId: "status789" } : apt
-                )
-            );
+            fetch('/api/appointments/' + id + '/status', {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-user-type': 'medecin',
+                }
+            })
+                .then((res) => res.json())
+                .then((data) => {
+                    if (data.error) {
+                        throw new Error(data.error);
+                    }
+
+                    // Mettre à jour la liste des rendez-vous
+                    reloadAppointments()
+                });
         } catch (error) {
             console.error("Erreur lors de l'annulation du rendez-vous:", error);
         }
     };
+
+    const reloadAppointments = async () => {
+        if (user?.id) {
+            try {
+                fetch('/api/doctors/' + user.id + '/appointments')
+                    .then((res) => res.json())
+                    .then((data) => {
+                        setAppointments(data);
+                    });
+            } catch (error) {
+                console.error("Erreur lors du rechargement des rendez-vous:", error);
+            }
+        }
+    }
 
     const handleAddNote = async (
         note: Omit<MedicalNote, "id" | "createdAt" | "updatedAt">
     ) => {
         try {
             if (user?.id && selectedPatientId) {
-                const newNote = await addMedicalNote({
-                    ...note,
-                    doctorId: user.id,
-                    patientId: selectedPatientId,
-                });
-                setNotes([newNote, ...notes]);
+                fetch('/api/doctors/' + user.id + '/patients/' + selectedPatientId + '/notes', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(note),
+                })
+                    .then((res) => res.json())
+                    .then((data) => {
+                        if (data.error) {
+                            throw new Error(data.error);
+                        }
+
+                        // Mettre à jour la liste des notes
+                        setNotes([data, ...notes]);
+                    });
             }
         } catch (error) {
             console.error("Erreur lors de l'ajout de la note:", error);

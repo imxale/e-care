@@ -28,13 +28,6 @@ import { fr } from "date-fns/locale";
 import { CalendarIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
-    getPatientAppointments,
-    getPatientNotes,
-    updateAppointmentStatus,
-    createAppointment,
-    getLocationTypes,
-    getAppointmentTypes,
-    getDoctors,
     type Appointment,
     type MedicalNote,
     type AppointmentType,
@@ -96,24 +89,36 @@ export default function PatientDashboard() {
             if (user?.id) {
                 try {
                     setLoading(true);
-                    const [
-                        appointmentsData,
-                        notesData,
-                        locationTypesData,
-                        appointmentTypesData,
-                        doctorsData,
-                    ] = await Promise.all([
-                        getPatientAppointments(user.id),
-                        getPatientNotes(user.id),
-                        getLocationTypes(),
-                        getAppointmentTypes(),
-                        getDoctors(),
-                    ]);
-                    setAppointments(appointmentsData);
-                    setNotes(notesData);
-                    setLocationTypes(locationTypesData);
-                    setAppointmentTypes(appointmentTypesData);
-                    setDoctors(doctorsData);
+
+                    fetch('/api/patients/' + user.id + '/appointments')
+                        .then((res) => res.json())
+                        .then((data) => {
+                            setAppointments(data);
+                        });
+
+                    fetch('/api/patients/' + user.id + '/medical-notes')
+                        .then((res) => res.json())
+                        .then((data) => {
+                            setNotes(data);
+                        });
+
+                    fetch('/api/location-types')
+                        .then((res) => res.json())
+                        .then((data) => {
+                            setLocationTypes(data);
+                        });
+
+                    fetch('/api/appointment-types')
+                        .then((res) => res.json())
+                        .then((data) => {
+                            setAppointmentTypes(data);
+                        });
+
+                    fetch('/api/doctors')
+                        .then((res) => res.json())
+                        .then((data) => {
+                            setDoctors(data);
+                        });
                 } catch (error) {
                     console.error(
                         "Erreur lors du chargement des données:",
@@ -140,16 +145,44 @@ export default function PatientDashboard() {
     const handleCancelAppointment = async (id: string) => {
         try {
             if (!user?.id) return;
-            await updateAppointmentStatus(id, user.id, "patient");
-            setAppointments(
-                appointments.map((apt) =>
-                    apt.id === id ? { ...apt, statusId: "status789" } : apt
-                )
-            );
+
+            fetch('/api/appointments/' + id + '/status', {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-user-type': 'patient',
+                },
+                body: JSON.stringify({
+                    userId: user.id,
+                }),
+            })
+                .then((res) => res.json())
+                .then((data) => {
+                    if (data.error) {
+                        throw new Error(data.error);
+                    }
+
+                    // Mettre à jour la liste des rendez-vous
+                    reloadAppointments()
+                });
         } catch (error) {
             console.error("Erreur lors de l'annulation du rendez-vous:", error);
         }
     };
+
+    const reloadAppointments = async () => {
+        if (user?.id) {
+            try {
+                fetch('/api/patients/' + user.id + '/appointments')
+                    .then((res) => res.json())
+                    .then((data) => {
+                        setAppointments(data);
+                    });
+            } catch (error) {
+                console.error("Erreur lors du rechargement des rendez-vous:", error);
+            }
+        }
+    }
 
     const handleScheduleAppointment = async () => {
         try {
@@ -162,19 +195,32 @@ export default function PatientDashboard() {
             const end = new Date(start);
             end.setMinutes(end.getMinutes() + 30); // Durée standard de 30 minutes
 
-            // Créer le rendez-vous
-            const newAppointment = await createAppointment(
-                selectedDoctor,
-                user.id,
-                start,
-                end,
-                reason,
-                selectedLocationType,
-                selectedAppointmentType
-            );
-
-            // Mettre à jour la liste des rendez-vous
-            setAppointments([newAppointment, ...appointments]);
+            fetch('/api/appointments', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    doctorId: selectedDoctor,
+                    patientId: user.id,
+                    start: start.toISOString(),
+                    end: end.toISOString(),
+                    reason,
+                    locationTypeId: selectedLocationType,
+                    appointmentTypeId: selectedAppointmentType,
+                }),
+            })
+                .then((res) => res.json())
+                .then((data => {
+                    if (data.error) {
+                        throw new Error(data.error);
+                    }
+                    // Mettre à jour la liste des rendez-vous
+                    reloadAppointments()
+                }))
+                .catch((error) => {
+                    console.error("Erreur lors de la création du rendez-vous:", error);
+                });
 
             // Réinitialiser le formulaire
             setSelectedDate(undefined);

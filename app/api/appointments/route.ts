@@ -4,16 +4,16 @@ import { createAppointment } from "@/services";
 export async function POST(request: Request) {
     try {
         const body = await request.json();
-        const { doctorId, patientId, start, end, reason } = body;
+        const { doctorId, patientId, start, end, reason, locationTypeId, appointmentTypeId } = body;
 
         const appointment = await createAppointment(
             doctorId,
             patientId,
             new Date(start),
             new Date(end),
-            "false",
-            "false",
-            reason
+            reason,
+            locationTypeId,
+            appointmentTypeId
         );
 
         return NextResponse.json(appointment);

@@ -3,12 +3,10 @@ import { getPatientAppointments } from "@/services";
 
 export async function GET(
     request: Request,
-    context: { params: { patientId: string } }
+    { params }: { params: Promise<{ patientId: string }> }
 ) {
-    const patientId = context.params.patientId;
-
     try {
-        const appointments = await getPatientAppointments(patientId);
+        const appointments = await getPatientAppointments((await params).patientId);
         return NextResponse.json(appointments);
     } catch (error) {
         console.error("Erreur lors de la récupération des rendez-vous:", error);

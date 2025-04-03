@@ -1,14 +1,12 @@
-import { NextResponse } from "next/server";
+import {NextRequest, NextResponse} from "next/server";
 import { getDoctorPatients } from "@/services";
 
 export async function GET(
-    request: Request,
-    context: { params: { doctorId: string } }
+    request: NextRequest,
+    { params }: { params: Promise<{ doctorId: string }> }
 ) {
-    const doctorId = await context.params.doctorId;
-
     try {
-        const patients = await getDoctorPatients(doctorId);
+        const patients = await getDoctorPatients((await params).doctorId);
         return NextResponse.json(patients);
     } catch (error) {
         console.error("Erreur lors de la récupération des patients:", error);
